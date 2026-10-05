@@ -1,0 +1,14 @@
+#APIDs
+EGSE_APID       = 0x000
+OBDH_APID       = 0x300
+PAYLOAD_APID    = 0x301
+
+# TC/TM msg type
+TC = 1
+TM = 0
+
+#TCs
+TC_GET_STATUS = 0x00
+
+#TMs
+TM_SEND_STATUS = 0x80
