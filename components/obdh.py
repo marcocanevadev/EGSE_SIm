@@ -6,34 +6,42 @@ from components.base_components import BaseInternalComponent
 class OBDH(BaseInternalComponent):
     def __init__(self, apid):
         super().__init__(apid)
-        self.payload_mode = 0
-        self.temperature = 0
+
         self.voltage = 0
+        self.cpu_usage = 0
+        
+        self.payload_mode = 0
+        self.payload_img_acquired = 0
+        self.payload_mem_used = 0
+
+        self.thermal_temperature = 0
+        self.thermal_heater_enabled = 0
+
 
     def simulate(self):
         pass
         
     def process(self):
-        packet = self.rx.get_packet()
-        if packet is None:
-            return
-        unpacked = parse_ccsds_packet(packet)
-        if unpacked is None:
-            return
-        apid = unpacked["apid"]
-        if apid == self.apid:   
-            data = unpacked["data"]
-            if not(isinstance(data, list)):
-                return
-            tc_type = data[0]
+        for link in self.links.values():
+            if link.has_packets():
+                packet = link.get_packet()
+                if packet is None:
+                    return
+                unpacked = parse_ccsds_packet(packet)
+                if unpacked is None:
+                    return
+                apid = unpacked["apid"]
+                if apid == self.apid:   
+                    data = unpacked["data"]
+                    if not(isinstance(data, list)):
+                        return
+                    tc_type = data[0]
 
-            if tc_type == TC_GET_STATUS:
-                self.tm_send_status(EGSE_APID)
+                    if tc_type == TC_GET_STATUS:
+                        self.tm_send_status(EGSE_APID)
 
-            if tc_type == TM_SEND_STATUS:
-                self.update_status(data[1:])
-        else:
-            self.tx.send(packet, apid)
+                    if tc_type == TM_SEND_STATUS:
+                        self.update_status(data[1:])
 
     def update_status(self, data):
         self.payload_mode = data[0]
@@ -79,6 +87,6 @@ class OBDH(BaseInternalComponent):
             volt_l,
         ])
         packet = build_ccsds_packet(TM, target, 0, self.seq_cnt, data)
-        self.tx.send(packet, target)
+        self.send(packet, target)
 
 

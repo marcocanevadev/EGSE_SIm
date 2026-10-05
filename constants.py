@@ -1,7 +1,7 @@
 #APIDs
 EGSE_APID       = 0x000
-OBDH_APID       = 0x300
-PAYLOAD_APID    = 0x301
+OBDH_APID       = 0x001
+PAYLOAD_APID    = 0x002
 
 # TC/TM msg type
 TC = 1

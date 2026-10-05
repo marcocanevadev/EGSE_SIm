@@ -3,19 +3,15 @@ from components.egse import EGSE
 from components.payload import Payload
 from constants import *
 from components.base_components import *
-from transport.marcowire import RxState
 
 
 TICK_TARGET = 5000
 TC_LIST = [
     (100, TC_GET_STATUS, OBDH_APID), 
-    (1000, TC_GET_STATUS, OBDH_APID),
-    (2000, TC_GET_STATUS, OBDH_APID),
-    (3000, TC_GET_STATUS, OBDH_APID),
-    (4000, TC_GET_STATUS, OBDH_APID),
+    (2000, TC_GET_STATUS, OBDH_APID), 
     ]
 
-def transmit(egse: BaseComponent, components: list[BaseInternalComponent], components_match_apids):
+def transmit(egse: BaseComponent, components: list[BaseInternalComponent], components_match_apids: dict[int, BaseComponent]):
     if egse.have_bytes():
         transmit_byte(egse,  components_match_apids)
 
@@ -23,14 +19,16 @@ def transmit(egse: BaseComponent, components: list[BaseInternalComponent], compo
         if component.have_bytes():
             transmit_byte(component, components_match_apids)
 
-def transmit_byte(sender: BaseComponent, components_match_apids):
-    output = sender.get_next_byte()
-    if output is None:
+def transmit_byte(sender: BaseComponent, components_match_apids: dict[int, BaseComponent]):
+    outputs = sender.get_next_byte()
+    sender_apid = sender.get_apid()
+    if len(outputs) == 0:
         return
-    byte = output[0]
-    target = output[1]
-    receiver = components_match_apids[target]
-    receiver.receive_byte(byte)
+    for output in outputs:
+        byte = output[0]
+        target = output[1]
+        receiver = components_match_apids[target]
+        receiver.receive_byte(byte, sender_apid)
 
 def process(egse: EGSE, components: list[BaseInternalComponent]):
     if egse.has_packets():
@@ -48,13 +46,21 @@ def tick(components: list[BaseInternalComponent]):
         component.tick()
 
 def main():
+    egse = EGSE(EGSE_APID)
     obdh = OBDH(OBDH_APID)
     payload = Payload(PAYLOAD_APID)
-    egse = EGSE()
+
+    egse.add_link(OBDH_APID) 
+    payload.add_link(OBDH_APID)   
+    obdh.add_link(EGSE_APID)
+    obdh.add_link(PAYLOAD_APID)
+
+
+
     components: list[BaseInternalComponent] = [
         obdh,
         payload]
-    components_match_apids = {
+    components_match_apids: dict[int, BaseComponent] = {
         EGSE_APID: egse,
         OBDH_APID: obdh,
         PAYLOAD_APID: payload,

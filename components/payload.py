@@ -23,26 +23,28 @@ class Payload(BaseInternalComponent):
         if self.voltage < 0:
             self.voltage = 0
 
-        if self.uptime % 200 == 0:
+        if self.uptime % 1000 == 0:
             self.tm_send_status(OBDH_APID)
         
 
     def process(self):
-        packet = self.rx.get_packet()
-        if packet is None:
-            return
-        unpacked = parse_ccsds_packet(packet)
-        if unpacked is None:
-            return
-        apid = unpacked["apid"]
-        if apid == self.apid:   
-            data = unpacked["data"]
-            if not(isinstance(data, list)):
-                return
-            tc_type = data[0]
+        for link in self.links.values():
+            if link.has_packets():
+                packet = link.get_packet()
+                if packet is None:
+                    return
+                unpacked = parse_ccsds_packet(packet)
+                if unpacked is None:
+                    return
+                apid = unpacked["apid"]
+                if apid == self.apid:   
+                    data = unpacked["data"]
+                    if not(isinstance(data, list)):
+                        return
+                    tc_type = data[0]
 
-            if tc_type == TC_GET_STATUS:
-                self.tm_send_status(OBDH_APID)
+                    if tc_type == TC_GET_STATUS:
+                        self.tm_send_status(OBDH_APID)
 
     
     # Type = TM
@@ -72,6 +74,6 @@ class Payload(BaseInternalComponent):
             volt_l,
         ])
         packet = build_ccsds_packet(TM, target, 0, self.seq_cnt, data)
-        self.tx.send(packet, target)
+        self.send(packet, target)
 
 
